@@ -23,7 +23,7 @@ const timeline = [
     icon: '💻',
     color: '#8b5cf6',
   },
-  {
+  { 
     year: '2025',
     title: 'Dinas Kominfotik Kota Metro',
     desc: 'Bergabung sebagai developer di Dinas Komunikasi, Informatika dan Statistik Kota Metro.',
