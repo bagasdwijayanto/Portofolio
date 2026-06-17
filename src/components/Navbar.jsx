@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTheme } from '../context/ThemeContext'
 
 const links = [
   { href: '#home',     label: 'Home' },
@@ -7,6 +8,42 @@ const links = [
   { href: '#projects', label: 'Projects' },
   { href: '#contact',  label: 'Contact' },
 ]
+
+function ThemeToggle() {
+  const { theme, toggle } = useTheme()
+  const isDark = theme === 'dark'
+
+  return (
+    <button
+      onClick={toggle}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={isDark ? 'Tampilan Cerah' : 'Tampilan Gelap'}
+      style={{
+        width: 40, height: 40, borderRadius: '10px',
+        border: '1px solid var(--border)',
+        background: isDark ? 'rgba(99,102,241,0.1)' : 'rgba(99,102,241,0.08)',
+        cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        transition: 'all 0.3s ease',
+        flexShrink: 0,
+        fontSize: '1.05rem',
+        lineHeight: 1,
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.background = 'rgba(99,102,241,0.2)'
+        e.currentTarget.style.transform = 'scale(1.08)'
+        e.currentTarget.style.borderColor = '#6366f1'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.background = isDark ? 'rgba(99,102,241,0.1)' : 'rgba(99,102,241,0.08)'
+        e.currentTarget.style.transform = 'scale(1)'
+        e.currentTarget.style.borderColor = 'var(--border)'
+      }}
+    >
+      {isDark ? '☀️' : '🌙'}
+    </button>
+  )
+}
 
 export default function Navbar() {
   const [scrolled,  setScrolled]  = useState(false)
@@ -113,6 +150,9 @@ export default function Navbar() {
             Hire Me ✦
           </a>
 
+          {/* Theme toggle */}
+          <ThemeToggle />
+
           {/* Hamburger button — mobile only */}
           <button
             className="nav-hamburger"
@@ -190,6 +230,16 @@ export default function Navbar() {
         }}>
           Hire Me ✦
         </a>
+
+        {/* Theme toggle in mobile menu */}
+        <div style={{
+          marginTop: '8px',
+          opacity: menuOpen ? 1 : 0,
+          transform: menuOpen ? 'translateY(0)' : 'translateY(20px)',
+          transition: `all 0.4s ease ${(links.length + 1) * 0.06}s`,
+        }}>
+          <ThemeToggle />
+        </div>
       </div>
     </>
   )

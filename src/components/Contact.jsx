@@ -34,7 +34,7 @@ const contactLinks = [
       </svg>
     ),
     label: 'GitHub',
-    value: 'github.com/bagas',
+    value: 'github.com/bagasdwijayanto',
     href: 'https://github.com',
     color: '#a5b4fc',
     bg: 'rgba(165,180,252,0.1)',
@@ -47,7 +47,7 @@ const contactLinks = [
     ),
     label: 'LinkedIn',
     value: 'linkedin.com/in/bagas',
-    href: 'https://linkedin.com',
+    href: 'https://www.linkedin.com/in/bagas-dwijayanto-192531256/',
     color: '#0A66C2',
     bg: 'rgba(10,102,194,0.1)',
   },
@@ -84,7 +84,7 @@ export default function Contact() {
   })
 
   return (
-    <section id="contact" style={{ padding: '110px 5%', background: 'var(--bg-secondary)', transition: 'background 0.4s' }}>
+    <section id="contact" style={{ padding: 'clamp(80px, 10vw, 110px) 5%', background: 'var(--bg-secondary)', transition: 'background 0.4s' }}>
       <div ref={ref} style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
         {/* Header */}
@@ -108,7 +108,7 @@ export default function Contact() {
           </p>
         </div>
 
-        <div className="contact-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '56px' }}>
+        <div className="contact-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))', gap: '56px' }}>
 
           {/* Contact links */}
           <div style={{

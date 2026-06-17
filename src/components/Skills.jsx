@@ -94,7 +94,7 @@ export default function Skills() {
   const [hoveredCat, setHoveredCat] = useState(null)
 
   return (
-    <section id="skills" style={{ padding: '110px 5%', background: 'var(--bg-secondary)', transition: 'background 0.4s' }}>
+    <section id="skills" style={{ padding: 'clamp(80px, 10vw, 110px) 5%', background: 'var(--bg-secondary)', transition: 'background 0.4s' }}>
       <div ref={ref} style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
         {/* Header */}
@@ -146,7 +146,7 @@ export default function Skills() {
         </div>
 
         {/* Skill Categories */}
-        <div className="skills-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '28px' }}>
+        <div className="skills-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', gap: '28px' }}>
           {skillCategories.map((cat, ci) => (
             <div key={cat.title}
               onMouseEnter={() => setHoveredCat(ci)}

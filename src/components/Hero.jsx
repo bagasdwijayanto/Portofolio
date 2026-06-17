@@ -160,8 +160,9 @@ export default function Hero() {
         position:   'relative',
         zIndex:     2,
         textAlign:  'center',
-        padding:    '0 24px',
+        padding:    'clamp(80px, 12vw, 120px) clamp(16px, 5%, 24px) 40px',
         maxWidth:   '850px',
+        width:      '100%',
         opacity:    visible ? 1 : 0,
         transition: 'opacity 0.5s ease',
       }}>

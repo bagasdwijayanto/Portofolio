@@ -50,7 +50,7 @@ export default function About() {
   })
 
   return (
-    <section id="about" style={{ padding: '110px 5%' }}>
+    <section id="about" style={{ padding: 'clamp(80px, 10vw, 110px) 5%' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
         {/* Section header */}
@@ -71,7 +71,7 @@ export default function About() {
           </h2>
         </div>
 
-        <div className="about-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '64px' }}>
+        <div className="about-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))', gap: '64px' }}>
 
           {/* Left column */}
           <div>
@@ -103,7 +103,7 @@ export default function About() {
             </p>
 
             {/* Info Cards Grid */}
-            <div className="info-cards-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div className="info-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
               {infoCards.map((card, i) => (
                 <div key={card.label} style={{
                   ...stagger(i + 3),

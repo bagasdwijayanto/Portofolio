@@ -286,6 +286,16 @@ body {
     padding-top: 80px !important;
     padding-bottom: 80px !important;
   }
+
+  /* About blob: smaller on mobile */
+  .about-avatar-blob {
+    width: 72px !important;
+    height: 72px !important;
+    font-size: 2rem !important;
+  }
+
+  /* Hero blobs: hide on mobile to reduce clutter */
+  .hero-blob { display: none; }
 }
 
 /* ── Mobile phones ── */
@@ -325,6 +335,16 @@ body {
   /* Timeline: tighten */
   .timeline-content {
     padding: 12px 14px !important;
+  }
+
+  /* Projects grid min-width reset */
+  .projects-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Skills grid min-width reset */
+  .skills-grid {
+    grid-template-columns: 1fr !important;
   }
 }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import useInView from './useInView'
 
 const projects = [
@@ -89,23 +89,287 @@ const projects = [
 
 const filters = ['All', 'Web', 'AR']
 
+// ── Project Card ──────────────────────────────────────────────
+function ProjectCard({ project, inView, index }) {
+  const [hovered, setHovered] = useState(false)
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: 'var(--bg-card)',
+        border: `1px solid ${hovered ? project.color + '50' : 'var(--border-subtle)'}`,
+        borderRadius: '20px',
+        padding: '28px',
+        cursor: 'default',
+        // fixed width so cards don't shrink in carousel
+        minWidth: '320px',
+        width: '320px',
+        flexShrink: 0,
+        opacity: inView ? 1 : 0,
+        transform: inView
+          ? hovered ? 'translateY(-8px) scale(1.02)' : 'translateY(0) scale(1)'
+          : 'translateY(40px)',
+        transition: `opacity 0.55s ease ${index * 0.07}s, transform 0.4s cubic-bezier(0.34,1.56,0.64,1), border-color 0.3s, box-shadow 0.3s`,
+        boxShadow: hovered ? `0 24px 60px ${project.color}25` : 'none',
+        position: 'relative',
+        overflow: 'hidden',
+        userSelect: 'none',
+      }}
+    >
+      {/* Glow bg */}
+      <div style={{
+        position: 'absolute', top: -30, right: -30,
+        width: 140, height: 140,
+        background: `radial-gradient(circle, ${project.color}${hovered ? '22' : '08'}, transparent 70%)`,
+        borderRadius: '50%',
+        transition: 'all 0.4s ease',
+        pointerEvents: 'none',
+      }} />
+
+      {/* Top accent line */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
+        background: `linear-gradient(90deg, ${project.color}, transparent)`,
+        opacity: hovered ? 1 : 0,
+        transition: 'opacity 0.3s ease',
+      }} />
+
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px' }}>
+        <div style={{
+          width: 52, height: 52,
+          background: `${project.color}15`,
+          border: `1.5px solid ${project.color}30`,
+          borderRadius: '14px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '1.5rem',
+          transform: hovered ? 'scale(1.1) rotate(-5deg)' : 'scale(1)',
+          transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+          boxShadow: hovered ? `0 6px 20px ${project.color}40` : 'none',
+        }}>{project.icon}</div>
+
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <span style={{
+            padding: '4px 12px',
+            background: `${project.color}15`,
+            color: project.color,
+            borderRadius: '100px',
+            fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.06em',
+          }}>{project.category}</span>
+          {project.url && (
+            <a
+              href={project.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              style={{
+                width: 32, height: 32, borderRadius: '8px',
+                background: 'rgba(99,102,241,0.08)',
+                border: '1px solid rgba(99,102,241,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#6366f1', textDecoration: 'none',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.2)'; e.currentTarget.style.transform = 'scale(1.1)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.08)'; e.currentTarget.style.transform = 'scale(1)' }}
+              title="Kunjungi Website"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+            </a>
+          )}
+        </div>
+      </div>
+
+      <h3 style={{ color: 'var(--text-primary)', fontWeight: 800, fontSize: '1.05rem', marginBottom: '10px', letterSpacing: '-0.01em' }}>
+        {project.title}
+      </h3>
+      <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.75, marginBottom: '18px' }}>
+        {project.description}
+      </p>
+
+      {/* Highlights */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '18px' }}>
+        {project.highlights.map(h => (
+          <span key={h} style={{
+            padding: '3px 10px',
+            background: 'var(--border-subtle)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '6px',
+            color: 'var(--text-secondary)',
+            fontSize: '0.72rem', fontWeight: 600,
+          }}>{h}</span>
+        ))}
+      </div>
+
+      {/* Tags */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+        {project.tags.map(tag => (
+          <span key={tag} style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            color: 'var(--text-muted)',
+            fontSize: '0.7rem', fontWeight: 500,
+            padding: '2px 8px',
+            background: 'rgba(99,102,241,0.06)',
+            borderRadius: '4px',
+          }}>#{tag}</span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Nav Arrow Button ──────────────────────────────────────────
+function NavBtn({ dir, onClick, disabled }) {
+  const [hov, setHov] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      aria-label={dir === 'left' ? 'Scroll kiri' : 'Scroll kanan'}
+      style={{
+        width: 44, height: 44,
+        borderRadius: '50%',
+        border: `1.5px solid ${disabled ? 'var(--border-subtle)' : hov ? '#6366f1' : 'var(--border)'}`,
+        background: disabled ? 'transparent' : hov ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.06)',
+        color: disabled ? 'var(--text-muted)' : hov ? '#a5b4fc' : 'var(--text-secondary)',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        transition: 'all 0.25s ease',
+        transform: hov && !disabled ? 'scale(1.1)' : 'scale(1)',
+        flexShrink: 0,
+      }}
+    >
+      {dir === 'left' ? (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+      ) : (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      )}
+    </button>
+  )
+}
+
+// ── Main Component ────────────────────────────────────────────
 export default function Projects() {
-  const [ref, inView]       = useInView()
+  const [ref, inView]   = useInView()
   const [activeFilter, setActiveFilter] = useState('All')
-  const [hovered, setHovered]           = useState(null)
+  const trackRef  = useRef(null)
+
+  // drag state
+  const isDragging   = useRef(false)
+  const dragStartX   = useRef(0)
+  const scrollStartX = useRef(0)
+  const velocity     = useRef(0)
+  const lastX        = useRef(0)
+  const lastT        = useRef(0)
+  const rafId        = useRef(null)
+
+  // scroll edge state for arrow buttons
+  const [canLeft,  setCanLeft]  = useState(false)
+  const [canRight, setCanRight] = useState(true)
 
   const filtered = activeFilter === 'All' ? projects : projects.filter(p => p.category === activeFilter)
 
+  // update arrow availability
+  const checkEdges = useCallback(() => {
+    const el = trackRef.current
+    if (!el) return
+    setCanLeft(el.scrollLeft > 4)
+    setCanRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4)
+  }, [])
+
+  useEffect(() => {
+    const el = trackRef.current
+    if (!el) return
+    el.scrollLeft = 0
+    checkEdges()
+  }, [activeFilter, checkEdges])
+
+  // ── Momentum scroll on desktop ──────────────────────────────
+  const startMomentum = useCallback(() => {
+    const el = trackRef.current
+    if (!el) return
+    const decay = 0.94
+    const step = () => {
+      velocity.current *= decay
+      if (Math.abs(velocity.current) < 0.4) { velocity.current = 0; return }
+      el.scrollLeft += velocity.current
+      checkEdges()
+      rafId.current = requestAnimationFrame(step)
+    }
+    cancelAnimationFrame(rafId.current)
+    rafId.current = requestAnimationFrame(step)
+  }, [checkEdges])
+
+  const onPointerDown = useCallback((e) => {
+    if (e.button !== 0) return
+    isDragging.current   = true
+    dragStartX.current   = e.clientX
+    scrollStartX.current = trackRef.current.scrollLeft
+    velocity.current     = 0
+    lastX.current        = e.clientX
+    lastT.current        = performance.now()
+    cancelAnimationFrame(rafId.current)
+    trackRef.current.style.cursor = 'grabbing'
+    trackRef.current.style.scrollBehavior = 'auto'
+  }, [])
+
+  const onPointerMove = useCallback((e) => {
+    if (!isDragging.current) return
+    e.preventDefault()
+    const dx = e.clientX - dragStartX.current
+    trackRef.current.scrollLeft = scrollStartX.current - dx
+    // compute velocity
+    const now = performance.now()
+    const dt  = now - lastT.current
+    if (dt > 0) velocity.current = (lastX.current - e.clientX) / dt * 16
+    lastX.current = e.clientX
+    lastT.current = now
+    checkEdges()
+  }, [checkEdges])
+
+  const onPointerUp = useCallback(() => {
+    if (!isDragging.current) return
+    isDragging.current = false
+    trackRef.current.style.cursor = 'grab'
+    trackRef.current.style.scrollBehavior = 'smooth'
+    startMomentum()
+  }, [startMomentum])
+
+  // Arrow scroll — one card width
+  const CARD_W = 320 + 24 // card width + gap
+  const scrollBy = useCallback((dir) => {
+    const el = trackRef.current
+    if (!el) return
+    el.scrollBy({ left: dir * CARD_W, behavior: 'smooth' })
+    setTimeout(checkEdges, 400)
+  }, [checkEdges, CARD_W])
+
+  // cleanup raf on unmount
+  useEffect(() => () => cancelAnimationFrame(rafId.current), [])
+
   return (
-    <section id="projects" style={{ padding: '110px 5%' }}>
-      <div ref={ref} style={{ maxWidth: '1200px', margin: '0 auto' }}>
+    <section id="projects" style={{ padding: 'clamp(80px, 10vw, 110px) 0' }}>
+      {/* inner wrapper with side padding for header & filters */}
+      <div ref={ref} style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 5%' }}>
 
         {/* Header */}
         <div style={{
           opacity: inView ? 1 : 0,
           transform: inView ? 'translateY(0)' : 'translateY(30px)',
           transition: 'all 0.7s ease',
-          marginBottom: '60px',
+          marginBottom: '40px',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
             <span style={{ fontFamily: "'JetBrains Mono', monospace", color: '#6366f1', fontSize: '0.85rem', fontWeight: 700 }}>03.</span>
@@ -121,155 +385,101 @@ export default function Projects() {
           </p>
         </div>
 
-        {/* Filters */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '48px', flexWrap: 'wrap' }}>
-          {filters.map(f => (
-            <button key={f} onClick={() => setActiveFilter(f)} style={{
-              padding: '9px 24px',
-              border: activeFilter === f ? '1.5px solid #6366f1' : '1.5px solid var(--border-subtle)',
-              borderRadius: '100px',
-              background: activeFilter === f ? 'rgba(99,102,241,0.12)' : 'transparent',
-              color: activeFilter === f ? '#a5b4fc' : 'var(--text-muted)',
-              fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer',
-              transition: 'all 0.25s ease',
-              letterSpacing: '0.03em',
-              boxShadow: activeFilter === f ? '0 4px 16px rgba(99,102,241,0.25)' : 'none',
-            }}
-            onMouseEnter={e => { if (activeFilter !== f) e.currentTarget.style.borderColor = 'rgba(99,102,241,0.4)' }}
-            onMouseLeave={e => { if (activeFilter !== f) e.currentTarget.style.borderColor = 'var(--border-subtle)' }}
-            >
-              {f === 'All' ? '✦ All' : f === 'Web' ? '🌐 Web' : '🥽 AR'} {activeFilter === f && `(${filtered.length})`}
-            </button>
-          ))}
-        </div>
-
-        {/* Grid */}
-        <div className="projects-grid" style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-          gap: '24px',
-        }}>
-          {filtered.map((project, i) => (
-            <div
-              key={project.id}
-              onMouseEnter={() => setHovered(project.id)}
-              onMouseLeave={() => setHovered(null)}
-              style={{
-                background: 'var(--bg-card)',
-                border: `1px solid ${hovered === project.id ? project.color + '50' : 'var(--border-subtle)'}`,
-                borderRadius: '20px',
-                padding: '28px',
-                cursor: 'default',
-                opacity: inView ? 1 : 0,
-                transform: inView
-                  ? hovered === project.id ? 'translateY(-8px) scale(1.01)' : 'translateY(0) scale(1)'
-                  : 'translateY(40px)',
-                transition: `all 0.55s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.07}s`,
-                boxShadow: hovered === project.id ? `0 24px 60px ${project.color}20` : 'none',
-                position: 'relative',
-                overflow: 'hidden',
+        {/* Filters + nav arrows row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '32px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {filters.map(f => (
+              <button key={f} onClick={() => setActiveFilter(f)} style={{
+                padding: '9px 24px',
+                border: activeFilter === f ? '1.5px solid #6366f1' : '1.5px solid var(--border-subtle)',
+                borderRadius: '100px',
+                background: activeFilter === f ? 'rgba(99,102,241,0.12)' : 'transparent',
+                color: activeFilter === f ? '#a5b4fc' : 'var(--text-muted)',
+                fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer',
+                transition: 'all 0.25s ease',
+                letterSpacing: '0.03em',
+                boxShadow: activeFilter === f ? '0 4px 16px rgba(99,102,241,0.25)' : 'none',
               }}
-            >
-              {/* Glow bg */}
-              <div style={{
-                position: 'absolute', top: -30, right: -30,
-                width: 140, height: 140,
-                background: `radial-gradient(circle, ${project.color}${hovered === project.id ? '20' : '08'}, transparent 70%)`,
-                borderRadius: '50%',
-                transition: 'all 0.4s ease',
-                pointerEvents: 'none',
-              }} />
+              onMouseEnter={e => { if (activeFilter !== f) e.currentTarget.style.borderColor = 'rgba(99,102,241,0.4)' }}
+              onMouseLeave={e => { if (activeFilter !== f) e.currentTarget.style.borderColor = 'var(--border-subtle)' }}
+              >
+                {f === 'All' ? '✦ All' : f === 'Web' ? '🌐 Web' : '🥽 AR'}
+                {activeFilter === f && <span style={{ marginLeft: '6px', opacity: 0.7 }}>({filtered.length})</span>}
+              </button>
+            ))}
+          </div>
 
-              {/* Top accent line */}
-              <div style={{
-                position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
-                background: `linear-gradient(90deg, ${project.color}, transparent)`,
-                opacity: hovered === project.id ? 1 : 0,
-                transition: 'opacity 0.3s ease',
-              }} />
-
-              {/* Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px' }}>
-                <div style={{
-                  width: 52, height: 52,
-                  background: `${project.color}15`,
-                  border: `1.5px solid ${project.color}30`,
-                  borderRadius: '14px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1.5rem',
-                  transform: hovered === project.id ? 'scale(1.1) rotate(-5deg)' : 'scale(1)',
-                  transition: 'transform 0.3s ease',
-                  boxShadow: hovered === project.id ? `0 6px 20px ${project.color}40` : 'none',
-                }}>{project.icon}</div>
-
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <span style={{
-                    padding: '4px 12px',
-                    background: `${project.color}15`,
-                    color: project.color,
-                    borderRadius: '100px',
-                    fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.06em',
-                  }}>{project.category}</span>
-                  {project.url && (
-                    <a href={project.url} target="_blank" rel="noopener noreferrer" style={{
-                      width: 32, height: 32, borderRadius: '8px',
-                      background: 'rgba(99,102,241,0.08)',
-                      border: '1px solid rgba(99,102,241,0.2)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: '#6366f1', textDecoration: 'none',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.2)'; e.currentTarget.style.transform = 'scale(1.1)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.08)'; e.currentTarget.style.transform = 'scale(1)' }}
-                    title="Kunjungi Website"
-                    >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                        <polyline points="15 3 21 3 21 9"/>
-                        <line x1="10" y1="14" x2="21" y2="3"/>
-                      </svg>
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              <h3 style={{ color: 'var(--text-primary)', fontWeight: 800, fontSize: '1.05rem', marginBottom: '10px', letterSpacing: '-0.01em' }}>
-                {project.title}
-              </h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.75, marginBottom: '18px' }}>
-                {project.description}
-              </p>
-
-              {/* Highlights */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '18px' }}>
-                {project.highlights.map(h => (
-                  <span key={h} style={{
-                    padding: '3px 10px',
-                    background: 'var(--border-subtle)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: '6px',
-                    color: 'var(--text-secondary)',
-                    fontSize: '0.72rem', fontWeight: 600,
-                  }}>{h}</span>
-                ))}
-              </div>
-
-              {/* Tags */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {project.tags.map(tag => (
-                  <span key={tag} style={{
-                    fontFamily: "'JetBrains Mono', monospace",
-                    color: 'var(--text-muted)',
-                    fontSize: '0.7rem', fontWeight: 500,
-                    padding: '2px 8px',
-                    background: 'rgba(99,102,241,0.06)',
-                    borderRadius: '4px',
-                  }}>#{tag}</span>
-                ))}
-              </div>
-            </div>
-          ))}
+          {/* Arrow nav */}
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <NavBtn dir="left"  onClick={() => scrollBy(-1)} disabled={!canLeft} />
+            <NavBtn dir="right" onClick={() => scrollBy(1)}  disabled={!canRight} />
+          </div>
         </div>
+      </div>
+
+      {/* ── Carousel track — full width, no outer padding ── */}
+      <div
+        ref={trackRef}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerLeave={onPointerUp}
+        onScroll={checkEdges}
+        style={{
+          display: 'flex',
+          gap: '24px',
+          overflowX: 'auto',
+          overflowY: 'visible',
+          paddingLeft: 'max(5%, calc((100vw - 1200px)/2 + 5%))',
+          paddingRight: 'max(5%, calc((100vw - 1200px)/2 + 5%))',
+          paddingBottom: '24px',
+          paddingTop: '8px',
+          cursor: 'grab',
+          scrollBehavior: 'smooth',
+          // hide native scrollbar but keep scroll
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        {/* hide webkit scrollbar via CSS class */}
+        <style>{`.projects-track::-webkit-scrollbar { display: none; }`}</style>
+
+        {filtered.map((project, i) => (
+          <ProjectCard key={project.id} project={project} inView={inView} index={i} />
+        ))}
+      </div>
+
+      {/* Scroll progress dots */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '16px', padding: '0 5%' }}>
+        {filtered.map((project, i) => {
+          // we can't track exact active card here without more complexity,
+          // so show static dots matching card count
+          return (
+            <button
+              key={project.id}
+              onClick={() => {
+                const el = trackRef.current
+                if (!el) return
+                const padding = Math.max(window.innerWidth * 0.05, (window.innerWidth - 1200) / 2 + window.innerWidth * 0.05)
+                el.scrollTo({ left: i * (320 + 24), behavior: 'smooth' })
+                setTimeout(checkEdges, 400)
+              }}
+              aria-label={`Go to project ${i + 1}`}
+              style={{
+                width: 6, height: 6,
+                borderRadius: '50%',
+                border: 'none',
+                background: 'rgba(99,102,241,0.35)',
+                cursor: 'pointer',
+                padding: 0,
+                transition: 'all 0.25s ease',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#6366f1'; e.currentTarget.style.transform = 'scale(1.5)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.35)'; e.currentTarget.style.transform = 'scale(1)' }}
+            />
+          )
+        })}
       </div>
     </section>
   )
