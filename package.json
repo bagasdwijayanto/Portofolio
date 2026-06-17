@@ -20,6 +20,6 @@
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "latest",
     "gh-pages": "^6.3.0",
-    "vite": "^8.0.16"
+    "vite": "^7.3.5"
   }
 }
