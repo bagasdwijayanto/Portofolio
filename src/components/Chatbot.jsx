@@ -122,9 +122,12 @@ export default function Chatbot() {
       if (!open) setUnread(u => u + 1)
     } catch (err) {
       console.error('[Chatbot error]', err)
+      const isQuota = err.message?.includes('429') || err.message?.includes('quota')
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `Maaf, terjadi kesalahan: ${err.message}. Pastikan API key sudah dikonfigurasi di Vercel.`,
+        content: isQuota
+          ? 'Maaf, layanan AI sedang sibuk atau quota habis. Silakan coba lagi dalam beberapa menit. 🙏'
+          : `Maaf, terjadi kesalahan saat menghubungi server. Coba lagi ya!`,
       }])
     } finally {
       setLoading(false)

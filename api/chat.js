@@ -125,14 +125,14 @@ export default async function handler(req) {
     if (!geminiRes.ok) {
       const errText = await geminiRes.text()
       lastError = `${model} → HTTP ${geminiRes.status}: ${errText.slice(0, 200)}`
-      // 404 = model not found, try next; other errors = stop
-      if (geminiRes.status !== 404) {
-        return new Response(
-          JSON.stringify({ error: lastError }),
-          { status: geminiRes.status, headers: { ...CORS, 'Content-Type': 'application/json' } }
-        )
+      // 404 = model not found, 429 = quota exceeded → try next model
+      if (geminiRes.status === 404 || geminiRes.status === 429) {
+        continue
       }
-      continue
+      return new Response(
+        JSON.stringify({ error: lastError }),
+        { status: geminiRes.status, headers: { ...CORS, 'Content-Type': 'application/json' } }
+      )
     }
 
     const data = await geminiRes.json()
