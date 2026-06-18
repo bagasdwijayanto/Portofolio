@@ -36,84 +36,122 @@ PROJECTS:
 KONTAK:
 - LinkedIn: linkedin.com/in/bagas-dwijayanto-192531256
 - GitHub: github.com/bagasdwijayanto
-- Email: (minta lewat form contact di website)
-- WhatsApp: (minta lewat form contact di website)
+- Email & WhatsApp: tersedia di form Contact di website
 
 Jawab dengan bahasa santai tapi profesional. Maksimal 3-4 kalimat per jawaban kecuali diminta detail.`
 
+// Models to try in order — fallback if one is unavailable
+const MODELS = [
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-1.5-flash-latest',
+  'gemini-1.5-flash',
+]
+
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+}
+
 export default async function handler(req) {
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    })
+    return new Response(null, { status: 204, headers: CORS })
   }
 
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 })
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: CORS })
   }
 
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'API key not configured' }), { status: 500 })
+    return new Response(JSON.stringify({ error: 'API key not configured' }), {
+      status: 500, headers: { ...CORS, 'Content-Type': 'application/json' },
+    })
   }
 
   let body
   try {
     body = await req.json()
   } catch {
-    return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400 })
+    return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: CORS })
   }
 
   const { messages } = body
-  if (!messages || !Array.isArray(messages)) {
-    return new Response(JSON.stringify({ error: 'messages array required' }), { status: 400 })
+  if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    return new Response(JSON.stringify({ error: 'messages array required' }), { status: 400, headers: CORS })
   }
 
-  // Convert messages to Gemini format
+  // Convert to Gemini format — merge system prompt as first user turn if needed
   const contents = messages.map(m => ({
     role: m.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: m.content }],
   }))
 
   const geminiBody = {
-    system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    system_instruction: {
+      parts: [{ text: SYSTEM_PROMPT }],
+    },
     contents,
     generationConfig: {
       temperature: 0.7,
       maxOutputTokens: 512,
     },
+    safetySettings: [
+      { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+    ],
   }
 
-  const geminiRes = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(geminiBody),
+  // Try each model until one succeeds
+  let lastError = ''
+  for (const model of MODELS) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+
+    let geminiRes
+    try {
+      geminiRes = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(geminiBody),
+      })
+    } catch (fetchErr) {
+      lastError = `Fetch failed: ${fetchErr.message}`
+      continue
     }
-  )
 
-  if (!geminiRes.ok) {
-    const err = await geminiRes.text()
-    return new Response(JSON.stringify({ error: 'Gemini error', detail: err }), {
-      status: geminiRes.status,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-    })
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text()
+      lastError = `${model} → HTTP ${geminiRes.status}: ${errText.slice(0, 200)}`
+      // 404 = model not found, try next; other errors = stop
+      if (geminiRes.status !== 404) {
+        return new Response(
+          JSON.stringify({ error: lastError }),
+          { status: geminiRes.status, headers: { ...CORS, 'Content-Type': 'application/json' } }
+        )
+      }
+      continue
+    }
+
+    const data = await geminiRes.json()
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+
+    if (!text) {
+      lastError = `${model} → empty response: ${JSON.stringify(data).slice(0, 200)}`
+      continue
+    }
+
+    return new Response(
+      JSON.stringify({ reply: text }),
+      { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } }
+    )
   }
 
-  const data = await geminiRes.json()
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? 'Maaf, tidak ada respons.'
-
-  return new Response(JSON.stringify({ reply: text }), {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-    },
-  })
+  // All models failed
+  return new Response(
+    JSON.stringify({ error: `All models failed. Last error: ${lastError}` }),
+    { status: 502, headers: { ...CORS, 'Content-Type': 'application/json' } }
+  )
 }
