@@ -8,6 +8,7 @@ import Contact from './components/Contact'
 import Footer from './components/Footer'
 import CustomCursor from './components/CustomCursor'
 import ScrollProgress from './components/ScrollProgress'
+import Chatbot from './components/Chatbot'
 import { ThemeProvider } from './context/ThemeContext'
 
 function AppContent() {
@@ -31,6 +32,7 @@ function AppContent() {
         <Contact />
       </main>
       <Footer />
+      <Chatbot />
     </div>
   )
 }
